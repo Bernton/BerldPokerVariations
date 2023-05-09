@@ -1,12 +1,12 @@
 ﻿using BerldPokerLibrary;
 using BerldPokerLibrary.HandEvaluation;
+using System.Diagnostics;
 
 namespace ExhaustiveSimulator
 {
     internal class MainViewModel
     {
-        internal event Action? AllEvaluatorsFinished;
-        internal List<ExhaustiveHandEvaluator> Evaluators { get; set; }
+        internal List<ExhaustiveHandEvaluator> Evaluators { get; set; } = new List<ExhaustiveHandEvaluator>();
 
         internal Dictionary<HandValue, int> MergedHandValueAmounts
         {
@@ -37,22 +37,40 @@ namespace ExhaustiveSimulator
             }
         }
 
-        internal MainViewModel()
+        internal void StartEvaluations(int amountOfCards, bool distribute)
         {
-            Evaluators = new List<ExhaustiveHandEvaluator>();
-
-            for (int i = 0; i < Deck.CardAmount; i++)
+            foreach (ExhaustiveHandEvaluator evaluator in Evaluators)
             {
-                ExhaustiveHandEvaluator evaluator = new(i);
-                evaluator.StartNew();
-                Evaluators.Add(evaluator);
+                evaluator.Dispose();
             }
 
-            Task.Run(() =>
+            List<ExhaustiveHandEvaluator> newEvaluators = new();
+
+            if (distribute)
             {
-                Task.WaitAll(Evaluators.Select(c => c.Task).ToArray());
-                AllEvaluatorsFinished?.Invoke();
-            });
+                for (int i = 0; i < Deck.CardAmount - amountOfCards + 1; i++)
+                {
+                    ExhaustiveHandEvaluator evaluator = new(amountOfCards, i);
+                    evaluator.StartNew();
+                    newEvaluators.Add(evaluator);
+                }
+            }
+            else
+            {
+                ExhaustiveHandEvaluator evaluator = new(amountOfCards);
+                evaluator.StartNew();
+                newEvaluators.Add(evaluator);
+            }
+
+            Evaluators = newEvaluators;
+        }
+
+        internal void StopEvaluators()
+        {
+            foreach (ExhaustiveHandEvaluator evaluator in Evaluators)
+            {
+                evaluator.Dispose();
+            }
         }
     }
 }
