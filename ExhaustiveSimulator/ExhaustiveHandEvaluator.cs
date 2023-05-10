@@ -22,17 +22,15 @@ namespace ExhaustiveSimulator
         internal Dictionary<HandValue, int> HandValueAmounts { get; } = new Dictionary<HandValue, int>();
 
         public int AmountOfCards { get; private set; }
-        public int? AssignedUpperMostIndex { get; private set; }
 
         internal Task Task { get; private set; }
 
         private CancellationTokenSource _tokenSource;
         private bool isInitalStart = true;
 
-        public ExhaustiveHandEvaluator(int amountOfCards, int? assignedUpperMostIndex = null)
+        public ExhaustiveHandEvaluator(int amountOfCards)
         {
             AmountOfCards = amountOfCards;
-            AssignedUpperMostIndex = assignedUpperMostIndex;
             Combinations = (int)GetBinCoeff(52, amountOfCards);
 
             _tokenSource = new CancellationTokenSource();
@@ -98,19 +96,9 @@ namespace ExhaustiveSimulator
             int[] indexes = new int[amountOfCards];
             Card[] cards = new Card[amountOfCards];
 
-            if (AssignedUpperMostIndex.HasValue)
+            for (int i = 0; i < amountOfCards; i++)
             {
-                indexes[0] = AssignedUpperMostIndex.Value;
-            }
-            else
-            {
-                indexes[0] = 0;
-
-            }
-
-            for (int i = 1; i < amountOfCards; i++)
-            {
-                indexes[i] = indexes[i - 1] + 1;
+                indexes[i] = i;
             }
 
             while (true)
@@ -187,7 +175,7 @@ namespace ExhaustiveSimulator
 
                     if (indexes[reverse] == Deck.CardAmount - i)
                     {
-                        if (reverse == 0 || (AssignedUpperMostIndex.HasValue && reverse == 1))
+                        if (reverse == 0)
                         {
                             return;
                         }

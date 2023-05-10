@@ -6,71 +6,20 @@ namespace ExhaustiveSimulator
 {
     internal class MainViewModel
     {
-        internal List<ExhaustiveHandEvaluator> Evaluators { get; set; } = new List<ExhaustiveHandEvaluator>();
+        internal ExhaustiveHandEvaluator? Evaluator { get; set; }
 
-        internal Dictionary<HandValue, int> MergedHandValueAmounts
+        internal void StartEvaluation(int amountOfCards)
         {
-            get
-            {
-                Dictionary<HandValue, int> value = new();
+            Evaluator?.Dispose();
 
-                for (int i = 0; i < Evaluators.Count; i++)
-                {
-                    ExhaustiveHandEvaluator evaluator = Evaluators[i];
-
-                    foreach (var entry in evaluator.HandValueAmounts)
-                    {
-                        HandValue handValue = entry.Key;
-
-                        if (value.ContainsKey(handValue))
-                        {
-                            value[handValue] += entry.Value;
-                        }
-                        else
-                        {
-                            value[handValue] = entry.Value;
-                        }
-                    }
-                }
-
-                return value;
-            }
+            ExhaustiveHandEvaluator evaluator = new(amountOfCards);
+            evaluator.StartNew();
+            Evaluator = evaluator;
         }
 
-        internal void StartEvaluations(int amountOfCards, bool distribute)
+        internal void StopEvaluation()
         {
-            foreach (ExhaustiveHandEvaluator evaluator in Evaluators)
-            {
-                evaluator.Dispose();
-            }
-
-            List<ExhaustiveHandEvaluator> newEvaluators = new();
-
-            if (distribute)
-            {
-                for (int i = 0; i < Deck.CardAmount - amountOfCards + 1; i++)
-                {
-                    ExhaustiveHandEvaluator evaluator = new(amountOfCards, i);
-                    evaluator.StartNew();
-                    newEvaluators.Add(evaluator);
-                }
-            }
-            else
-            {
-                ExhaustiveHandEvaluator evaluator = new(amountOfCards);
-                evaluator.StartNew();
-                newEvaluators.Add(evaluator);
-            }
-
-            Evaluators = newEvaluators;
-        }
-
-        internal void StopEvaluators()
-        {
-            foreach (ExhaustiveHandEvaluator evaluator in Evaluators)
-            {
-                evaluator.Dispose();
-            }
+            Evaluator?.Dispose();
         }
     }
 }

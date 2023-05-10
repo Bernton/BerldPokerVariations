@@ -1,3 +1,4 @@
+using BerldPokerLibrary.HandEvaluation;
 using System.Text;
 
 namespace ExhaustiveSimulator
@@ -17,18 +18,21 @@ namespace ExhaustiveSimulator
 
         private void EvaluatorsHandler()
         {
-            Task.WaitAll(_vm.Evaluators.Select(c => c.Task).ToArray());
+            ExhaustiveHandEvaluator? evaluator = _vm.Evaluator;
+
+            if (evaluator is null)
+            {
+                return;
+            }
+
+            evaluator.Task.Wait();
 
             _endTime = DateTime.Now;
 
-            int totalAmount = _vm.Evaluators.Sum(c => c.HandValueAmount);
-
-            if (totalAmount == _vm.Evaluators.First().AmountOfCards)
+            if (evaluator.HandValueAmount == evaluator.Combinations)
             {
-                var values = _vm.MergedHandValueAmounts;
-
-                var sortedValues = values.ToList().OrderBy(c => c.Key);
-
+                Dictionary<HandValue, int> values = evaluator.HandValueAmounts;
+                IOrderedEnumerable<KeyValuePair<HandValue, int>> sortedValues = values.ToList().OrderBy(c => c.Key);
                 StringBuilder stringBuilder = new();
 
                 foreach (var value in sortedValues)
@@ -42,19 +46,24 @@ namespace ExhaustiveSimulator
 
         private void OnTimerUpdateValuesTick(object sender, EventArgs e)
         {
-            List<ExhaustiveHandEvaluator> evaluators = _vm.Evaluators;
+            ExhaustiveHandEvaluator? evaluator = _vm.Evaluator;
 
-            int royalFlushAmount = evaluators.Sum(c => c.RoyalFlushAmount);
-            int straightFlushAmount = evaluators.Sum(c => c.StraightFlushAmount);
-            int fourOfAKindAmount = evaluators.Sum(c => c.FourOfAKindAmount);
-            int fullHouseAmount = evaluators.Sum(c => c.FullHouseAmount);
-            int flushAmount = evaluators.Sum(c => c.FlushAmount);
-            int straightAmount = evaluators.Sum(c => c.StraightAmount);
-            int threeOfAKindAmount = evaluators.Sum(c => c.ThreeOfAKindAmount);
-            int twoPairAmount = evaluators.Sum(c => c.TwoPairAmount);
-            int pairAmount = evaluators.Sum(c => c.PairAmount);
-            int highCardAmount = evaluators.Sum(c => c.HighCardAmount);
-            int totalAmount = evaluators.Sum(c => c.HandValueAmount);
+            if (evaluator is null)
+            {
+                return;
+            }
+
+            int royalFlushAmount = evaluator.RoyalFlushAmount;
+            int straightFlushAmount = evaluator.StraightFlushAmount;
+            int fourOfAKindAmount = evaluator.FourOfAKindAmount;
+            int fullHouseAmount = evaluator.FullHouseAmount;
+            int flushAmount = evaluator.FlushAmount;
+            int straightAmount = evaluator.StraightAmount;
+            int threeOfAKindAmount = evaluator.ThreeOfAKindAmount;
+            int twoPairAmount = evaluator.TwoPairAmount;
+            int pairAmount = evaluator.PairAmount;
+            int highCardAmount = evaluator.HighCardAmount;
+            int totalAmount = evaluator.HandValueAmount;
 
             _labelRoyalFlushAmount.Text = royalFlushAmount.ToString();
             _labelStraightFlushAmount.Text = straightFlushAmount.ToString();
@@ -90,13 +99,10 @@ namespace ExhaustiveSimulator
             _labelPairRatio.Text = FormatToPercetage(pairRatio);
             _labelHighCardRatio.Text = FormatToPercetage(highCardRatio);
 
-            int totalRatioValue = (int)(totalAmount / (double)evaluators.First().Combinations * 1000.0);
+            int totalRatioValue = (int)(totalAmount / (double)evaluator.Combinations * 1000.0);
             _progressBar.Value = totalRatioValue;
 
-            if (evaluators.Any())
-            {
-                _labelCombinationsAmount.Text = evaluators.First().Combinations.ToString();
-            }
+            _labelCombinationsAmount.Text = evaluator.Combinations.ToString();
 
             DateTime time = _endTime ?? DateTime.Now;
             TimeSpan timeEllapsed = time - _startTime;
@@ -121,13 +127,13 @@ namespace ExhaustiveSimulator
         {
             _startTime = DateTime.Now;
             _endTime = null;
-            _vm.StartEvaluations(cardAmount, true);
+            _vm.StartEvaluation(cardAmount);
             Task.Run(EvaluatorsHandler);
         }
 
         private void OnButtonStopClick(object sender, EventArgs e)
         {
-            _vm.StopEvaluators();
+            _vm.StopEvaluation();
         }
     }
 }
