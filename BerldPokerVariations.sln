@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BerldPokerLibrary", "BerldP
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExhaustiveSimulator", "ExhaustiveSimulator\ExhaustiveSimulator.csproj", "{762B3D54-BD65-4467-9D89-63BFFCB01F96}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OmahaSim", "OmahaSim\OmahaSim.csproj", "{CBDEFC85-7E86-42EB-ACA6-D4807592C333}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{762B3D54-BD65-4467-9D89-63BFFCB01F96}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{762B3D54-BD65-4467-9D89-63BFFCB01F96}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{762B3D54-BD65-4467-9D89-63BFFCB01F96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CBDEFC85-7E86-42EB-ACA6-D4807592C333}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CBDEFC85-7E86-42EB-ACA6-D4807592C333}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CBDEFC85-7E86-42EB-ACA6-D4807592C333}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CBDEFC85-7E86-42EB-ACA6-D4807592C333}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

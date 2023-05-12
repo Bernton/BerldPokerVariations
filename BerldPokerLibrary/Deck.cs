@@ -14,7 +14,7 @@ namespace BerldPokerLibrary
 
         private Card[] _cards = new Card[CardAmount];
 
-        internal Deck()
+        public Deck()
         {
             ArrangeInitially();
             Shuffle();
@@ -56,7 +56,7 @@ namespace BerldPokerLibrary
             _cards = cards;
         }
 
-        internal Card this[int i]
+        public Card this[int i]
         {
             get { return _cards[i]; }
         }
