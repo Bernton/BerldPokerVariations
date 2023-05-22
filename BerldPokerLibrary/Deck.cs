@@ -7,43 +7,63 @@ namespace BerldPokerLibrary
     {
         public static readonly int CardAmount = RankExtensions.RankAmount * SuitExtensions.SuitAmount;
 
-        internal ReadOnlyCollection<Card> Cards
+        public int AliveCardAmount => _aliveCardAmount;
+
+        public ReadOnlyCollection<Card> Cards
         {
-            get { return _cards.ToList().AsReadOnly(); }
+            get { return _cards.AsReadOnly(); }
         }
 
-        private Card[] _cards = new Card[CardAmount];
+        private readonly int _aliveCardAmount;
+        private List<Card> _cards = new();
+        private readonly List<Card> _deadCards;
 
         public Deck()
         {
+            _aliveCardAmount = CardAmount;
+            _deadCards = new List<Card>();
+            ArrangeInitially();
+            Shuffle();
+        }
+
+        public Deck(IEnumerable<Card> deadCards)
+        {
+            _deadCards = deadCards.ToList();
+            _aliveCardAmount = CardAmount - _deadCards.Count;
             ArrangeInitially();
             Shuffle();
         }
 
         private void ArrangeInitially()
         {
+            _cards.Clear();
+
             for (int i = 0; i < CardAmount; i++)
             {
-                _cards[i] = new Card()
+                Card card = new()
                 {
                     Rank = (Rank)(i / SuitExtensions.SuitAmount),
                     Suit = (Suit)(i % SuitExtensions.SuitAmount)
                 };
+
+                if (!_deadCards.Contains(card))
+                {
+                    _cards.Add(card);
+                }
             }
         }
 
-        internal void Shuffle()
+        public void Shuffle()
         {
-            Card[] cards = new Card[CardAmount];
-
+            Card[] cards = new Card[AliveCardAmount];
             List<int> availableIndexes = new();
 
-            for (int i = 0; i < CardAmount; i++)
+            for (int i = 0; i < AliveCardAmount; i++)
             {
                 availableIndexes.Add(i);
             }
 
-            for (int i = 0; i < CardAmount; i++)
+            for (int i = 0; i < AliveCardAmount; i++)
             {
                 int chosenIndex = RandomNumberGenerator.GetInt32(availableIndexes.Count);
                 int availableIndex = availableIndexes[chosenIndex];
@@ -53,7 +73,7 @@ namespace BerldPokerLibrary
                 availableIndexes.RemoveAt(chosenIndex);
             }
 
-            _cards = cards;
+            _cards = cards.ToList();
         }
 
         public Card this[int i]

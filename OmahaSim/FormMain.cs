@@ -1,91 +1,135 @@
 using BerldPokerLibrary;
-using BerldPokerLibrary.HandEvaluation;
-using BerldPokerLibrary.Omaha;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace OmahaSim
 {
     public partial class FormMain : Form
     {
+        private TrialRunner? _runner;
+
         public FormMain()
         {
             InitializeComponent();
-
-            Deck deck = new Deck();
-
-            List<Card> cards1 = new()
-            {
-                deck[0],
-                deck[2],
-                deck[4],
-                deck[6]
-            };
-
-            List<Card> cards2 = new()
-            {
-                deck[1],
-                deck[3],
-                deck[5],
-                deck[7]
-            };
-
-            List<Card> communityCards = new()
-            {
-                deck[9],
-                deck[10],
-                deck[11],
-                deck[13],
-                deck[15]
-            };
-
-            FlowLayoutPanel panel = new()
-            {
-                Dock = DockStyle.Fill
-            };
-
-            HandValue handValue1 = OmahaHand.Determine(cards1, communityCards);
-
-            AddPlayer(panel, cards1, handValue1);
-
-            HandValue handValue2 = OmahaHand.Determine(cards2, communityCards);
-
-            AddPlayer(panel,cards2, handValue2);
-
-            AddCommunity(panel, communityCards);
-            
-            Controls.Add(panel);
-
         }
 
-        private static void AddCommunity(FlowLayoutPanel parent, List<Card> communityCards)
+        private void Start(List<Card> cards)
         {
-            FlowLayoutPanel panel = new();
-            panel.Height *= 2;
-
-            foreach (Card holeCard in communityCards)
-            {
-                Label labelCard = new() { Text = holeCard.ToString() };
-                panel.Controls.Add(labelCard);
-            }
-
-            parent.Controls.Add(panel);
+            Stop();
+            _runner = new TrialRunner();
+            _runner.Start(cards);
         }
 
-        private static void AddPlayer(FlowLayoutPanel parent, List<Card> holeCards, HandValue handValue)
+        private void Stop()
         {
-            FlowLayoutPanel panel = new();
-            panel.Height *= 2;
-
-            foreach (Card holeCard in holeCards)
+            if (_runner is not null)
             {
-                Label labelCard = new() { Text = holeCard.ToString() };
-                panel.Controls.Add(labelCard);
+                _runner.Dispose();
+                _runner = null;
+            }
+        }
+
+        private List<Card>? CardsFromText(string text)
+        {
+            if (text.Length != 8)
+            {
+                return null;
             }
 
-            Label labelHandValue = new() { Text = handValue.ToString() };
-            panel.Controls.Add(labelHandValue);
+            List<Card> cards = new();
 
-            parent.Controls.Add(panel);
+            for (int i = 0; i < 8; i += 2)
+            {
+                char charRank = text[i];
+                char charSuit = text[i + 1];
+
+                Rank? rank = RankFromChar(charRank);
+                Suit? suit = SuitFromChar(charSuit);
+
+                if (rank.HasValue && suit.HasValue)
+                {
+                    cards.Add(new Card(rank.Value, suit.Value));
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            return cards;
+        }
+
+        private static Rank? RankFromChar(char charRank)
+        {
+            if (int.TryParse(charRank.ToString(), out int charRankNumber))
+            {
+                if (charRankNumber >= 2 && charRankNumber <= 9)
+                {
+                    return (Rank)(charRankNumber - 2);
+                }
+            }
+
+            return charRank switch
+            {
+                'T' => Rank.Ten,
+                'J' => Rank.Jack,
+                'Q' => Rank.Queen,
+                'K' => Rank.King,
+                'A' => Rank.Ace,
+                _ => null
+            };
+        }
+
+        private static Suit? SuitFromChar(char charSuit)
+        {
+            return charSuit switch
+            {
+                'c' => Suit.Clubs,
+                'h' => Suit.Hearts,
+                'd' => Suit.Diamonds,
+                's' => Suit.Spades,
+                _ => null
+            };
+        }
+
+        private void OnButtonStartClick(object sender, EventArgs e)
+        {
+            _labelCardsError.Text = string.Empty;
+
+            List<Card>? cardsFromText = CardsFromText(_textBoxCards.Text);
+
+            if (cardsFromText == null)
+            {
+                _labelCardsError.Text = "Invalid format for cards.";
+            }
+            else if (cardsFromText.Distinct().Count() != cardsFromText.Count)
+            {
+                _labelCardsError.Text = "Duplicate cards found.";
+            }
+            else
+            {
+                Start(cardsFromText);
+            }
+        }
+
+        private void OnButtonStopClick(object sender, EventArgs e)
+        {
+            Stop();
+        }
+
+        private void OnTimerTick(object sender, EventArgs e)
+        {
+            if (_runner is null)
+            {
+                return;
+            }
+
+            if (_runner.TotalEquity == 0)
+            {
+                _labelEquityValue.Text = string.Empty;
+                return;
+            }
+
+            double equityRatio = 100.0 * _runner.Equity / _runner.TotalEquity;
+            _labelEquityValue.Text = $"{equityRatio:0.00} %";
         }
     }
 }
