@@ -9,6 +9,8 @@ namespace BerldPokerLibrary
 
         public int AliveCardAmount => _aliveCardAmount;
 
+        public int CardsDrawn { get; private set; }
+
         public ReadOnlyCollection<Card> Cards
         {
             get { return _cards.AsReadOnly(); }
@@ -74,6 +76,19 @@ namespace BerldPokerLibrary
             }
 
             _cards = cards.ToList();
+            CardsDrawn = 0;
+        }
+
+        public Card Draw()
+        {
+            if (CardsDrawn >= AliveCardAmount)
+            {
+                throw new InvalidOperationException("Drawn more cards than exist.");
+            }
+
+            Card drawnCard = _cards[CardsDrawn];
+            CardsDrawn++;
+            return drawnCard;
         }
 
         public Card this[int i]

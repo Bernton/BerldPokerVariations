@@ -1,0 +1,254 @@
+﻿@page "/"
+@using BerldPokerLibrary;
+@using BerldPokerLibrary.Trials;
+@using System.Collections.ObjectModel;
+
+<PageTitle>Berld Poker Calculator</PageTitle>
+
+<h1>Berld Poker Calculator</h1>
+
+<button @onclick="OnCalculate">Calculate</button>
+
+<input type="checkbox" @oninput="(args) => useRandomTrials = (bool?)args.Value" />
+
+@if (generalError is not null)
+{
+    <p style="color: red;">@generalError</p>
+}
+
+<div style="margin: 1rem;">
+    <p>Board</p>
+    <input type="text" @oninput="(args) => boardValue = (string?)args.Value" />
+
+    @if (boardError is not null)
+    {
+        <p style="color: red;">@boardError</p>
+    }
+</div>
+
+<div style="display: flex; flex-wrap: wrap; width: 100%;">
+    @for (int i = 0; i < 9; i++)
+    {
+        int index = i;
+
+        <div style="margin: 1rem;">
+            <p>Player @(i + 1)</p>
+            <input type="text" @oninput="(args) => UpdateValue(index, (string?)args.Value)" />
+
+            @if (trialPlayers is not null && i < trialPlayers.Count)
+            {
+                <p>@trialPlayers[i].Equity</p>
+            }
+
+            @if (errors[i] is not null)
+            {
+                <p style="color: red;">@errors[i]</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private ReadOnlyCollection<TrialPlayer>? trialPlayers;
+    private string? generalError;
+    private string? boardValue;
+    private string? boardError;
+    private bool? useRandomTrials;
+
+    private string?[] values = new string[9];
+    private string?[] errors = new string[9];
+
+    private void UpdateValue(int index, string? value)
+    {
+        values[index] = value;
+    }
+
+    private void OnCalculate()
+    {
+        trialPlayers = null;
+        generalError = null;
+        boardError = null;
+
+        for (int i = 0; i < 9; i++)
+        {
+            errors[i] = null;
+        }
+
+        List<Card> boardCards = new();
+
+        if (!string.IsNullOrWhiteSpace(boardValue))
+        {
+            if (boardValue.Length % 2 != 0)
+            {
+                boardError = "Must have even amount of characters!";
+            }
+            else
+            {
+                List<Card>? cards = CardsFromString(boardValue);
+
+                if (cards is null)
+                {
+                    boardError = "Invalid character(s) found!";
+                }
+                else if (cards.Count > 5)
+                {
+                    boardError = "There must be 5 cards or less!";
+                }
+                else
+                {
+                    boardCards = cards;
+                }
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(values[0]))
+        {
+            errors[0] = "Value must not be empty!";
+        }
+
+        List<string> playerValues = new();
+
+        for (int i = 0; i < 9; i++)
+        {
+            string? value = values[i];
+
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                break;
+            }
+            else if (value == "*")
+            {
+                playerValues.Add("");
+            }
+            else
+            {
+                playerValues.Add(value);
+            }
+        }
+
+        List<List<Card>> playerCards = new();
+
+        for (int i = 0; i < playerValues.Count; i++)
+        {
+            string value = playerValues[i];
+
+            if (value.Length % 2 != 0)
+            {
+                errors[i] = "Must have even amount of characters!";
+                continue;
+            }
+
+            List<Card>? holeCards = CardsFromString(value);
+
+            if (holeCards is null)
+            {
+                errors[i] = "Invalid character(s) found!";
+            }
+            else if (holeCards.Count > 2)
+            {
+                boardError = "There must be 2 cards or less!";
+            }
+            else
+            {
+                playerCards.Add(holeCards);
+            }
+        }
+
+        for (int i = 0; i < errors.Length; i++)
+        {
+            if (!string.IsNullOrWhiteSpace(errors[i]))
+            {
+                return;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(boardError))
+        {
+            return;
+        }
+
+        List<Card> allCards = new();
+        List<TrialPlayer> players = new();
+
+        allCards.AddRange(boardCards);
+
+        for (int i = 0; i < playerCards.Count; i++)
+        {
+            allCards.AddRange(playerCards[i]);
+            players.Add(new TrialPlayer(playerCards[i]));
+        }
+
+        if (allCards.Count != allCards.Distinct().Count())
+        {
+            generalError = "There must be no duplicate cards!";
+            return;
+        }
+
+        TrialRunner runner = new(players, boardCards);
+
+        if (useRandomTrials == true)
+        {
+            runner.Start(1000);
+        }
+        else
+        {
+            runner.Start();
+        }
+
+        trialPlayers = runner.Players;
+    }
+
+    private List<Card>? CardsFromString(string cardsString)
+    {
+        int cardAmount = cardsString.Length / 2;
+        List<Card> cards = new();
+
+        for (int i = 0; i < cardAmount; i++)
+        {
+            Rank? rank = RankFromChar(cardsString[i * 2]);
+            Suit? suit = SuitFromChar(cardsString[i * 2 + 1]);
+
+            if (!rank.HasValue || !suit.HasValue)
+            {
+                return null;
+            }
+
+            cards.Add(new Card(rank.Value, suit.Value));
+        }
+
+        return cards;
+    }
+
+    private Rank? RankFromChar(char rankChar)
+    {
+        return rankChar switch
+        {
+            '2' => Rank.Deuce,
+            '3' => Rank.Tray,
+            '4' => Rank.Four,
+            '5' => Rank.Five,
+            '6' => Rank.Six,
+            '7' => Rank.Seven,
+            '8' => Rank.Eight,
+            '9' => Rank.Nine,
+            'T' => Rank.Ten,
+            'J' => Rank.Jack,
+            'Q' => Rank.Queen,
+            'K' => Rank.King,
+            'A' => Rank.Ace,
+            _ => null
+        };
+    }
+
+    private Suit? SuitFromChar(char suitChar)
+    {
+        return suitChar switch
+        {
+            'c' => Suit.Clubs,
+            'd' => Suit.Diamonds,
+            'h' => Suit.Hearts,
+            's' => Suit.Spades,
+            _ => null
+        };
+    }
+}

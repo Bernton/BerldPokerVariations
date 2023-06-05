@@ -27,7 +27,7 @@ namespace OmahaSim
             }
         }
 
-        private List<Card>? CardsFromText(string text)
+        private static List<Card>? CardsFromText(string text)
         {
             if (text.Length != 8)
             {
