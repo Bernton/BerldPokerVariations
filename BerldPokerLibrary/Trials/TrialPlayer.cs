@@ -1,12 +1,17 @@
 ﻿using BerldPokerLibrary.HandEvaluation;
+using System.Collections.ObjectModel;
 
 namespace BerldPokerLibrary.Trials
 {
     public class TrialPlayer
     {
+        public TrialResultCount WinnerCount { get; } = new();
+
         internal HandValue? CurrentValue { get; set; }
 
         internal List<Card> HoleCards { get; }
+
+        public ReadOnlyCollection<Card> Cards => HoleCards.AsReadOnly();
 
         internal int TrialAmount { get; set; }
 
