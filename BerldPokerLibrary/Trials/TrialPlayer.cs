@@ -1,7 +1,11 @@
-﻿namespace BerldPokerLibrary.Trials
+﻿using BerldPokerLibrary.HandEvaluation;
+
+namespace BerldPokerLibrary.Trials
 {
     public class TrialPlayer
     {
+        internal HandValue? CurrentValue { get; set; }
+
         internal List<Card> HoleCards { get; }
 
         internal int TrialAmount { get; set; }

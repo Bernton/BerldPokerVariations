@@ -8,13 +8,15 @@ namespace BerldPokerLibrary.Trials
         private List<TrialPlayer> _players;
         private List<Card> _boardCards;
 
+        public int TrialAmount { get; private set; } = 0;
+
         public ReadOnlyCollection<TrialPlayer> Players => _players.AsReadOnly();
 
-        public TrialRunner(List<TrialPlayer> players, List<Card> boardCars)
+        public TrialRunner(List<TrialPlayer> players, List<Card> boardCards)
         {
             List<Card> deadCards = new();
 
-            deadCards.AddRange(boardCars);
+            deadCards.AddRange(boardCards);
 
             foreach (TrialPlayer player in players)
             {
@@ -27,7 +29,7 @@ namespace BerldPokerLibrary.Trials
             }
 
             _players = players;
-            _boardCards = boardCars;
+            _boardCards = boardCards;
         }
 
         public void Start()
@@ -49,42 +51,15 @@ namespace BerldPokerLibrary.Trials
             {
                 deck.Shuffle();
 
-                List<Card> boardCards = new(_boardCards);
+                List<Card> assignedCards = new();
+                int unknownCardAmount = GetUnknownCardAmount();
 
-                while (boardCards.Count < 5)
+                for (int j = 0; j < unknownCardAmount; j++)
                 {
-                    boardCards.Add(deck.Draw());
+                    assignedCards.Add(deck.Draw());
                 }
 
-                List<(TrialPlayer player, HandValue value)> values = new();
-
-                foreach (TrialPlayer player in _players)
-                {
-                    List<Card> holeCards = new(player.HoleCards);
-
-                    while (holeCards.Count < 2)
-                    {
-                        holeCards.Add(deck.Draw());
-                    }
-
-                    List<Card> cards = new();
-                    cards.AddRange(holeCards);
-                    cards.AddRange(boardCards);
-
-                    HandValue value = HandValue.Determine(cards);
-                    values.Add((player, value));
-
-                    player.TrialAmount += 1;
-                }
-
-                var highest = values.OrderBy(c => c.value).Last();
-                var winners = values.Where(c => c.value.CompareTo(highest.value) == 0).ToList();
-                double winnerEquity = 1.0 / winners.Count;
-
-                for (int j = 0; j < winners.Count; j++)
-                {
-                    winners[j].player.TotalEquity += winnerEquity;
-                }
+                DoTrial(assignedCards);
             }
         }
 
@@ -165,7 +140,7 @@ namespace BerldPokerLibrary.Trials
                 boardCards.Add(cardsToAssign.Pop());
             }
 
-            List<(TrialPlayer player, HandValue value)> values = new();
+            List<TrialPlayer> winners = new();
 
             foreach (TrialPlayer player in _players)
             {
@@ -180,20 +155,38 @@ namespace BerldPokerLibrary.Trials
                 cardsToEvaluate.AddRange(holeCards);
                 cardsToEvaluate.AddRange(boardCards);
 
-                HandValue value = HandValue.Determine(cardsToEvaluate);
-                values.Add((player, value));
+                player.CurrentValue = HandValue.Determine(cardsToEvaluate);
+
+                if (winners.Count == 0)
+                {
+                    winners.Add(player);
+                }
+                else
+                {
+                    int comparisonResult = player.CurrentValue.CompareTo(winners[0].CurrentValue);
+
+                    if (comparisonResult > 0)
+                    {
+                        winners.Clear();
+                    }
+
+                    if (comparisonResult >= 0)
+                    {
+                        winners.Add(player);
+                    }
+                }
 
                 player.TrialAmount += 1;
             }
 
-            var highest = values.OrderBy(c => c.value).Last();
-            var winners = values.Where(c => c.value.CompareTo(highest.value) == 0).ToList();
             double winnerEquity = 1.0 / winners.Count;
 
             for (int j = 0; j < winners.Count; j++)
             {
-                winners[j].player.TotalEquity += winnerEquity;
+                winners[j].TotalEquity += winnerEquity;
             }
+
+            TrialAmount++;
         }
 
         private List<Card> GetDeadCards()

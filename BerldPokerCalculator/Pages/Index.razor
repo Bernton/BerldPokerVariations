@@ -11,6 +11,11 @@
 
 <input type="checkbox" @oninput="(args) => useRandomTrials = (bool?)args.Value" />
 
+@if (lastRunTime is not null)
+{
+    <p>@lastRunTime.Value.TotalMilliseconds ms</p>
+}
+
 @if (generalError is not null)
 {
     <p style="color: red;">@generalError</p>
@@ -54,6 +59,7 @@
     private string? boardValue;
     private string? boardError;
     private bool? useRandomTrials;
+    private TimeSpan? lastRunTime;
 
     private string?[] values = new string[9];
     private string?[] errors = new string[9];
@@ -184,6 +190,8 @@
             return;
         }
 
+        DateTime startTime = DateTime.Now;
+
         TrialRunner runner = new(players, boardCards);
 
         if (useRandomTrials == true)
@@ -195,6 +203,8 @@
             runner.Start();
         }
 
+        DateTime endTime = DateTime.Now;
+        lastRunTime = endTime - startTime;
         trialPlayers = runner.Players;
     }
 
